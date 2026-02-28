@@ -1,0 +1,37 @@
+{
+    "input_dir": "input_pdfs",
+    "output_dir": "output_pdfs",
+    "log_dir": "logs",
+    "font_dir": "fonts",
+    "front_template_filename": "front_template.pdf",
+    "back_cover_filename": "back_cover.pdf",
+
+    "detection": {
+        "max_scan_pages": 10,
+        "region_x0_ratio": 0.0,
+        "region_y0_ratio": 0.7,
+        "region_x1_ratio": 0.5,
+        "region_y1_ratio": 1.0,
+        "case_sensitive": false,
+        "name_prefix": ""
+    },
+
+    "template": {
+        "marker_text": "{{STUDENT_NAME}}",
+        "fallback_x": 297.75,
+        "fallback_y": 340,
+        "font_name": "DejaVuSans-Bold",
+        "font_size": 26,
+        "font_color_r": 0.10,
+        "font_color_g": 0.36,
+        "font_color_b": 0.60,
+        "text_align": "center"
+    },
+
+    "processing": {
+        "max_workers": 4,
+        "booklet_page_multiple": 4,
+        "stream_buffer_size_mb": 64,
+        "delete_source_pdf": false
+    }
+}
