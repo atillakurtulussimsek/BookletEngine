@@ -1,6 +1,7 @@
 @echo off
 REM ============================================================
 REM  Booklet Engine - Tek tikla calistirma scripti (Windows)
+REM  Sistem Python'unu kullanir; eksik bagimliliklari otomatik kurar.
 REM ============================================================
 setlocal
 
@@ -13,36 +14,36 @@ echo   %DATE% %TIME%
 echo ========================================
 echo.
 
-REM Sanal ortam kontrolu ve aktivasyonu
-if exist ".venv\Scripts\activate.bat" (
-    echo Sanal ortam aktif ediliyor...
-    call ".venv\Scripts\activate.bat"
-) else if exist "venv\Scripts\activate.bat" (
-    echo Sanal ortam aktif ediliyor...
-    call "venv\Scripts\activate.bat"
-) else (
-    echo [UYARI] Sanal ortam bulunamadi, sistem Python'u kullaniliyor.
-    echo         Sanal ortam olusturmak icin: py -3 -m venv .venv
-    echo.
-)
-
-REM Python kontrolu
-set "PY="
-where python >nul 2>&1 && set "PY=python"
+REM --- Python 3.10+ yorumlayicisi bul -------------------------
+call :find_python
 if not defined PY (
-    where py >nul 2>&1 && set "PY=py -3"
-)
-if not defined PY (
-    echo [HATA] Python bulunamadi! Lutfen Python 3.10+ kurun.
-    echo        https://www.python.org/downloads/
+    echo [HATA] Python 3.10 veya ustu bulunamadi.
+    echo        Kurulum: https://www.python.org/downloads/
+    echo        Kurarken "Add python.exe to PATH" secenegini isaretleyin.
     pause
     exit /b 1
 )
 
 for /f "delims=" %%v in ('%PY% --version 2^>^&1') do echo Python: %%v
+
+REM --- Bagimliliklar eksikse kur ------------------------------
+%PY% -c "import click, pymupdf, pikepdf, reportlab, pydantic, rich" >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo Bagimliliklar eksik, kuruluyor ^(ilk calistirmada birkac dakika surebilir^)...
+    %PY% -m pip install --user -r requirements.txt
+    if errorlevel 1 (
+        echo.
+        echo [HATA] Bagimliliklar kurulamadi. Internet baglantinizi kontrol edin.
+        pause
+        exit /b 1
+    )
+    echo [OK] Bagimliliklar kuruldu.
+)
+
 echo.
 
-REM Calistir
+REM --- Calistir -----------------------------------------------
 %PY% -m src.cli run --config config.json
 set EXIT_CODE=%ERRORLEVEL%
 
@@ -58,3 +59,23 @@ if %EXIT_CODE% EQU 0 (
 echo.
 pause
 exit /b %EXIT_CODE%
+
+REM ============================================================
+REM  Yardimci altyordamlar
+REM ============================================================
+:find_python
+set "PY="
+call :try_python "py -3.13"
+call :try_python "py -3.12"
+call :try_python "py -3.11"
+call :try_python "py -3.10"
+call :try_python "py -3"
+call :try_python "python"
+call :try_python "python3"
+exit /b
+
+:try_python
+if defined PY exit /b
+%~1 -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
+if not errorlevel 1 set "PY=%~1"
+exit /b

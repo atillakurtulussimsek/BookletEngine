@@ -34,6 +34,9 @@ _SEARCH_PATHS = [
     # macOS
     Path("/Library/Fonts"),
     Path("/System/Library/Fonts"),
+    # macOS ships Arial (full Turkish coverage) here, not in the dirs above
+    Path("/System/Library/Fonts/Supplemental"),
+    Path.home() / "Library/Fonts",
 ]
 
 _FONT_CANDIDATES = {
