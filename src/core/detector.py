@@ -44,7 +44,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF (modern import name)
 
 from src.models.config import DetectionConfig
 from src.models.records import DetectionResult

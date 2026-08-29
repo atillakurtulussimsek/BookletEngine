@@ -12,7 +12,7 @@ import io
 from pathlib import Path
 from typing import Optional
 
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF (modern import name)
 
 # Locate a TrueType font that supports Turkish characters (ı, ğ, ş, etc.)
 # Helvetica (built-in) lacks these; DejaVu Sans has full coverage.

@@ -12,7 +12,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-import fitz
+import pymupdf as fitz
 import pikepdf
 import pytest
 

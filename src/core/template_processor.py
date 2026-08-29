@@ -36,7 +36,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF (modern import name)
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 

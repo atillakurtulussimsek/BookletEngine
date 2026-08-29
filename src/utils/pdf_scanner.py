@@ -24,7 +24,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Optional
 
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF (modern import name)
 
 from src.models.config import DetectionConfig
 from src.models.records import StudentRecord
