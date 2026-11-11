@@ -15,10 +15,10 @@ from pathlib import Path
 
 import click
 
-from src.core.engine import run_batch
-from src.models.config import load_config
-from src.utils.pdf_scanner import scan_student_pdfs
-from src.utils.logging import print_report, setup_logging, write_report_csv
+from src.exam.core.engine import run_batch
+from src.exam.models.config import load_config
+from src.exam.utils.pdf_scanner import scan_student_pdfs
+from src.exam.utils.logging import print_report, setup_logging, write_report_csv
 
 
 @click.group()

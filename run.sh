@@ -54,7 +54,7 @@ fi
 echo ""
 
 # --- Çalıştır -------------------------------------------------
-"$PY" -m src.cli run --config config.json
+"$PY" -m src.exam.cli run --config config.exam.json
 EXIT_CODE=$?
 
 echo ""

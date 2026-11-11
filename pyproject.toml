@@ -27,7 +27,8 @@ dev = [
 ]
 
 [project.scripts]
-booklet-engine = "src.cli:main"
+booklet-exam = "src.exam.cli:main"
+booklet-analyse = "src.analyse.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

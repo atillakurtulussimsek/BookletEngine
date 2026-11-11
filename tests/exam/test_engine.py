@@ -16,19 +16,19 @@ import pymupdf as fitz
 import pikepdf
 import pytest
 
-from src.core.assembler import assemble_booklet
-from src.core.detector import detect_removable_pages, validate_pdf
-from src.core.engine import run_batch
-from src.core.pipeline import process_student
-from src.core.template_processor import (
+from src.exam.core.assembler import assemble_booklet
+from src.exam.core.detector import detect_removable_pages, validate_pdf
+from src.exam.core.engine import run_batch
+from src.exam.core.pipeline import process_student
+from src.exam.core.template_processor import (
     _find_marker_rect,
     create_name_overlay,
     prepare_front_template,
 )
-from src.models.config import DetectionConfig, EngineConfig, TemplateConfig, load_config
-from src.models.records import ProcessingStatus, StudentRecord
-from src.utils.pdf_scanner import scan_student_pdfs
-from tests.fixtures import (
+from src.exam.models.config import DetectionConfig, EngineConfig, TemplateConfig, load_config
+from src.exam.models.records import ProcessingStatus, StudentRecord
+from src.exam.utils.pdf_scanner import scan_student_pdfs
+from tests.exam.fixtures import (
     create_back_cover,
     create_front_template,
     create_sample_student_pdf,

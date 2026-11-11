@@ -44,7 +44,7 @@ if errorlevel 1 (
 echo.
 
 REM --- Calistir -----------------------------------------------
-%PY% -m src.cli run --config config.json
+%PY% -m src.exam.cli run --config config.exam.json
 set EXIT_CODE=%ERRORLEVEL%
 
 echo.

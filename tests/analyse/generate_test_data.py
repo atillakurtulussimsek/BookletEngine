@@ -16,7 +16,7 @@ import click
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from tests.fixtures import setup_test_environment
+from tests.analyse.fixtures import setup_test_environment
 
 
 @click.command()
@@ -31,8 +31,8 @@ def main(count: int, output: str):
     for fn, name in students:
         click.echo(f"  • {fn} → {name}")
 
-    click.echo(f"\nFront template: {base / 'input_pdfs' / 'front_template.pdf'}")
-    click.echo(f"Back cover:     {base / 'input_pdfs' / 'back_cover.pdf'}")
+    click.echo(f"\nFront cover:    {base / 'input_pdfs' / 'front.pdf'}")
+    click.echo(f"Back cover:     {base / 'input_pdfs' / 'back.pdf'}")
 
 
 if __name__ == "__main__":

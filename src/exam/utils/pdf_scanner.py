@@ -26,8 +26,8 @@ from typing import Optional
 
 import pymupdf as fitz  # PyMuPDF (modern import name)
 
-from src.models.config import DetectionConfig
-from src.models.records import StudentRecord
+from src.exam.models.config import DetectionConfig
+from src.exam.models.records import StudentRecord
 
 logger = logging.getLogger("booklet_engine.scanner")
 

@@ -5,10 +5,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY config.json .
+COPY config.exam.json config.analyse.json ./
 COPY src/ src/
 COPY fonts/ fonts/
-COPY input_pdfs/front_template.pdf input_pdfs/back_cover.pdf input_pdfs/
+COPY input_pdfs/front_template.pdf input_pdfs/back_cover.pdf input_pdfs/front.pdf input_pdfs/back.pdf input_pdfs/
 
 # Jobs live on a volume in production (Dokploy: mount /app/jobs)
 RUN mkdir -p jobs logs

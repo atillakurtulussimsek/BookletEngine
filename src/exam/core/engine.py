@@ -22,9 +22,9 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from src.core.pipeline import process_student
-from src.models.config import EngineConfig
-from src.models.records import (
+from src.exam.core.pipeline import process_student
+from src.exam.models.config import EngineConfig
+from src.exam.models.records import (
     BatchReport,
     ProcessingStatus,
     StudentRecord,
@@ -65,7 +65,7 @@ def _process_wrapper(args: tuple) -> dict:
 def _dict_to_result(d: dict) -> "ProcessingResult":
     """Convert serialized dict back to ProcessingResult."""
     from pathlib import Path
-    from src.models.records import ProcessingResult
+    from src.exam.models.records import ProcessingResult
 
     student = StudentRecord(
         filename=d["student_filename"],

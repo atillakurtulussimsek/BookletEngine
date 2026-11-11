@@ -46,8 +46,8 @@ from pathlib import Path
 
 import pymupdf as fitz  # PyMuPDF (modern import name)
 
-from src.models.config import DetectionConfig
-from src.models.records import DetectionResult
+from src.exam.models.config import DetectionConfig
+from src.exam.models.records import DetectionResult
 
 logger = logging.getLogger("booklet_engine.detector")
 

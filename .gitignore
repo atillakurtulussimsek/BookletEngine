@@ -29,6 +29,8 @@ build/
 input_pdfs/*.pdf
 !input_pdfs/front_template.pdf
 !input_pdfs/back_cover.pdf
+!input_pdfs/front.pdf
+!input_pdfs/back.pdf
 
 # ── Output (generated files) ────────────────────────────────
 output_pdfs/*.pdf

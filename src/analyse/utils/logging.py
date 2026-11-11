@@ -17,7 +17,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from src.models.records import BatchReport, ProcessingResult, ProcessingStatus
+from src.analyse.models.records import BatchReport, ProcessingResult, ProcessingStatus
 
 _console = Console(stderr=True)
 
@@ -69,7 +69,7 @@ def setup_logging(log_dir: Path, verbose: bool = False) -> logging.Logger:
 
 def print_report(report: BatchReport) -> None:
     """Print a summary table to console using Rich."""
-    table = Table(title="Booklet Engine — Processing Report", show_lines=True)
+    table = Table(title="Analyse Booklet Engine — Processing Report", show_lines=True)
     table.add_column("Metric", style="bold cyan")
     table.add_column("Value", justify="right")
 
@@ -113,7 +113,7 @@ def write_report_csv(report: BatchReport, output_path: Path) -> Path:
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow([
-            "filename", "student_name", "status", "pages_removed",
+            "filename", "student_name", "status", "content_page_count",
             "blank_pages_added", "final_page_count", "processing_time_ms",
             "error_message",
         ])
@@ -122,7 +122,7 @@ def write_report_csv(report: BatchReport, output_path: Path) -> Path:
                 r.student.safe_filename,
                 r.student.safe_name,
                 r.status.value,
-                r.pages_removed,
+                r.content_page_count,
                 r.blank_pages_added,
                 r.final_page_count,
                 f"{r.processing_time_ms:.1f}",

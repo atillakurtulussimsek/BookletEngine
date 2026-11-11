@@ -12,11 +12,11 @@ import logging
 import time
 from pathlib import Path
 
-from src.core.assembler import assemble_booklet
-from src.core.detector import detect_removable_pages, validate_pdf
-from src.core.template_processor import prepare_front_template
-from src.models.config import EngineConfig
-from src.models.records import (
+from src.exam.core.assembler import assemble_booklet
+from src.exam.core.detector import detect_removable_pages, validate_pdf
+from src.exam.core.template_processor import prepare_front_template
+from src.exam.models.config import EngineConfig
+from src.exam.models.records import (
     ProcessingResult,
     ProcessingStatus,
     StudentRecord,

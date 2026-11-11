@@ -44,8 +44,8 @@ from pathlib import Path
 
 import pikepdf
 
-from src.models.config import EngineConfig
-from src.models.records import DetectionResult
+from src.exam.models.config import EngineConfig
+from src.exam.models.records import DetectionResult
 
 logger = logging.getLogger("booklet_engine.assembler")
 

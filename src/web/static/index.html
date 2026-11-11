@@ -29,6 +29,14 @@
   }
   h1 { font-size: 22px; margin: 0 0 4px; }
   p.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .mode {
+    border: 2px solid var(--border); border-radius: 12px; padding: 14px;
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .mode.selected { border-color: var(--accent); background: rgba(46,134,193,.08); }
+  .mode .title { font-weight: 600; font-size: 15px; }
+  .mode .desc { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
   .drop {
     border: 2px dashed var(--border); border-radius: 12px; padding: 36px 16px;
     text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
@@ -57,7 +65,18 @@
 <body>
 <div class="card">
   <h1>Kitapçık Motoru</h1>
-  <p class="sub">Öğrenci PDF'lerini içeren .zip dosyasını yükleyin; kitapçıklar otomatik oluşturulup indirilecek.</p>
+  <p class="sub">Kitapçık türünü seçin, öğrenci PDF'lerini içeren .zip dosyasını yükleyin; kitapçıklar otomatik oluşturulup indirilecek.</p>
+
+  <div class="modes">
+    <div class="mode selected" data-mode="exam">
+      <div class="title">Deneme kitapçığı</div>
+      <div class="desc">Kişiye özel deneme sınavı PDF'leri</div>
+    </div>
+    <div class="mode" data-mode="analyse">
+      <div class="title">Analiz kitapçığı</div>
+      <div class="desc">Bireysel analiz raporu PDF'leri</div>
+    </div>
+  </div>
 
   <div class="drop" id="drop">
     <div><strong>Zip dosyası seçin</strong> veya buraya sürükleyin</div>
@@ -94,6 +113,15 @@ const PHASE_LABELS = {
 
 let currentJobId = null;
 let pollTimer = null;
+let currentMode = "exam";
+
+document.querySelectorAll(".mode").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll(".mode").forEach(m => m.classList.remove("selected"));
+    el.classList.add("selected");
+    currentMode = el.dataset.mode;
+  });
+});
 
 drop.addEventListener("click", () => fileInput.click());
 drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("hover"); });
@@ -131,6 +159,7 @@ function startUpload(file) {
 
   const form = new FormData();
   form.append("file", file);
+  form.append("mode", currentMode);
 
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/jobs");

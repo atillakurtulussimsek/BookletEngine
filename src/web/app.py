@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from src.web import jobs
@@ -29,13 +29,15 @@ async def index() -> FileResponse:
 
 
 @app.post("/api/jobs")
-async def uploadZip(file: UploadFile = File(...)) -> dict:
+async def uploadZip(file: UploadFile = File(...), mode: str = Form("exam")) -> dict:
     jobs.cleanupOldJobs()
 
+    if mode not in jobs.ENGINES:
+        raise HTTPException(status_code=400, detail="Geçersiz kitapçık türü.")
     if not (file.filename or "").lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="Lütfen .zip dosyası yükleyin.")
 
-    job = jobs.createJob()
+    job = jobs.createJob(mode)
     zipPath = job.jobDir / jobs.UPLOAD_NAME
     try:
         with open(zipPath, "wb") as dst:

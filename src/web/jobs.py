@@ -1,6 +1,12 @@
 """
 Web job manager — zip upload → batch processing → result zip.
 
+Two engines share this manager:
+    exam    — Deneme kitapçığı (src.exam):   name from bottom-left region,
+              cover pages removed, templates front_template.pdf / back_cover.pdf
+    analyse — Analiz kitapçığı (src.analyse): name from "Ad Soyad" header table,
+              all pages kept, templates front.pdf / back.pdf
+
 Each job lives in its own directory under jobs/<jobId>/:
     upload.zip   — raw uploaded archive
     input/       — extracted student PDFs + templates
@@ -9,7 +15,7 @@ Each job lives in its own directory under jobs/<jobId>/:
     result.zip   — final downloadable archive
 
 Jobs run in a background thread; heavy PDF work is distributed to a
-ProcessPoolExecutor exactly like the CLI engine.
+ProcessPoolExecutor exactly like the CLI engines.
 """
 
 from __future__ import annotations
@@ -23,12 +29,14 @@ import zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-from src.core.engine import _dict_to_result, _process_wrapper
-from src.models.config import EngineConfig, load_config
-from src.models.records import ProcessingStatus
-from src.utils.pdf_scanner import scan_student_pdfs
+from src.analyse.core import engine as analyseEngine
+from src.analyse.models.config import load_config as loadAnalyseConfig
+from src.analyse.utils.pdf_scanner import scan_student_pdfs as scanAnalysePdfs
+from src.exam.core import engine as examEngine
+from src.exam.models.config import load_config as loadExamConfig
+from src.exam.utils.pdf_scanner import scan_student_pdfs as scanExamPdfs
 
 logger = logging.getLogger("booklet_engine.web")
 
@@ -38,10 +46,30 @@ JOB_TTL_SECONDS = 2 * 60 * 60  # old job dirs are purged after 2 hours
 UPLOAD_NAME = "upload.zip"
 RESULT_NAME = "result.zip"
 
+ENGINES: dict[str, dict] = {
+    "exam": {
+        "label": "Deneme kitapçığı",
+        "configPath": BASE_DIR / "config.exam.json",
+        "loadConfig": loadExamConfig,
+        "scan": scanExamPdfs,
+        "processWrapper": examEngine._process_wrapper,
+        "dictToResult": examEngine._dict_to_result,
+    },
+    "analyse": {
+        "label": "Analiz kitapçığı",
+        "configPath": BASE_DIR / "config.analyse.json",
+        "loadConfig": loadAnalyseConfig,
+        "scan": scanAnalysePdfs,
+        "processWrapper": analyseEngine._process_wrapper,
+        "dictToResult": analyseEngine._dict_to_result,
+    },
+}
+
 
 @dataclass
 class Job:
     jobId: str
+    mode: str = "exam"
     state: str = "uploaded"  # uploaded|extracting|scanning|processing|zipping|done|error
     total: int = 0
     done: int = 0
@@ -57,6 +85,7 @@ class Job:
     def toDict(self) -> dict:
         return {
             "jobId": self.jobId,
+            "mode": self.mode,
             "state": self.state,
             "total": self.total,
             "done": self.done,
@@ -70,10 +99,10 @@ _jobs: dict[str, Job] = {}
 _lock = threading.Lock()
 
 
-def createJob() -> Job:
+def createJob(mode: str) -> Job:
     """Register a new job and create its directory."""
     jobId = uuid.uuid4().hex[:12]
-    job = Job(jobId=jobId)
+    job = Job(jobId=jobId, mode=mode)
     job.jobDir.mkdir(parents=True, exist_ok=True)
     with _lock:
         _jobs[jobId] = job
@@ -148,7 +177,7 @@ def _extractZip(job: Job) -> int:
     return count
 
 
-def _buildJobConfig(job: Job, baseCfg: EngineConfig) -> EngineConfig:
+def _buildJobConfig(job: Job, baseCfg: Any) -> Any:
     """Derive a per-job config rooted at the job directory."""
     cfg = baseCfg.model_copy(
         deep=True,
@@ -166,7 +195,7 @@ def _buildJobConfig(job: Job, baseCfg: EngineConfig) -> EngineConfig:
     return cfg
 
 
-def _copyTemplates(job: Job, cfg: EngineConfig, baseCfg: EngineConfig) -> None:
+def _copyTemplates(job: Job, cfg: Any, baseCfg: Any) -> None:
     """Ensure template PDFs exist in the job input dir.
 
     Templates inside the uploaded zip take precedence; otherwise the
@@ -182,7 +211,7 @@ def _copyTemplates(job: Job, cfg: EngineConfig, baseCfg: EngineConfig) -> None:
         shutil.copy2(source, target)
 
 
-def _zipResults(job: Job, cfg: EngineConfig) -> Path:
+def _zipResults(job: Job, cfg: Any) -> Path:
     """Zip all booklets into result.zip, deleting each PDF as it is added."""
     resultPath = job.jobDir / RESULT_NAME
     outputs = sorted(cfg.output_path.glob("*.pdf"))
@@ -198,9 +227,10 @@ def _runJob(jobId: str) -> None:
     job = getJob(jobId)
     if job is None:
         return
+    engine = ENGINES[job.mode]
 
     try:
-        baseCfg = load_config(BASE_DIR / "config.json")
+        baseCfg = engine["loadConfig"](engine["configPath"])
 
         job.state = "extracting"
         extracted = _extractZip(job)
@@ -215,7 +245,7 @@ def _runJob(jobId: str) -> None:
         _copyTemplates(job, cfg, baseCfg)
 
         job.state = "scanning"
-        students = scan_student_pdfs(cfg.input_path, cfg)
+        students = engine["scan"](cfg.input_path, cfg)
         if not students:
             job.state = "error"
             job.message = "PDF'lerden öğrenci adı çıkarılamadı."
@@ -227,22 +257,22 @@ def _runJob(jobId: str) -> None:
         workItems = [(student, cfg) for student in students]
         with ProcessPoolExecutor(max_workers=cfg.processing.max_workers) as executor:
             futureMap = {
-                executor.submit(_process_wrapper, item): item[0]
+                executor.submit(engine["processWrapper"], item): item[0]
                 for item in workItems
             }
             for future in as_completed(futureMap):
                 student = futureMap[future]
                 try:
-                    result = _dict_to_result(future.result())
-                    status = result.status
+                    result = engine["dictToResult"](future.result())
+                    statusValue = result.status.value
                     errorMessage = result.error_message
                 except Exception as e:  # worker crash
-                    status = ProcessingStatus.ERROR
+                    statusValue = "ERROR"
                     errorMessage = f"Worker crashed: {e}"
                     logger.exception(f"Worker crash for {student.safe_filename}")
 
                 job.done += 1
-                if status != ProcessingStatus.SUCCESS:
+                if statusValue != "SUCCESS":
                     job.errors += 1
                     job.failed.append(f"{student.safe_filename}: {errorMessage}")
 
@@ -260,7 +290,7 @@ def _runJob(jobId: str) -> None:
 
         job.state = "done"
         job.message = f"{job.total - job.errors}/{job.total} kitapçık hazır."
-        logger.info(f"Job {jobId} done: {job.message}")
+        logger.info(f"Job {jobId} ({job.mode}) done: {job.message}")
 
     except Exception as e:
         job.state = "error"

@@ -9,6 +9,8 @@ output_pdfs
 input_pdfs/*
 !input_pdfs/front_template.pdf
 !input_pdfs/back_cover.pdf
+!input_pdfs/front.pdf
+!input_pdfs/back.pdf
 run.sh
 run.bat
 README.md

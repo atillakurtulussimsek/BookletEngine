@@ -40,8 +40,8 @@ import pymupdf as fitz  # PyMuPDF (modern import name)
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-from src.models.config import TemplateConfig
-from src.utils.font_manager import register_font
+from src.exam.models.config import TemplateConfig
+from src.exam.utils.font_manager import register_font
 
 logger = logging.getLogger("booklet_engine.template")
 
