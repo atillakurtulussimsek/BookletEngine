@@ -32,6 +32,6 @@
         "max_workers": 4,
         "booklet_page_multiple": 4,
         "stream_buffer_size_mb": 64,
-        "delete_source_pdf": false
+        "delete_source_pdf": true
     }
 }

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kitapçık Motoru</title>
+<style>
+  :root {
+    --bg: #f4f6fa; --card: #ffffff; --text: #1a2233; --muted: #64748b;
+    --accent: #1b5c99; --accent2: #2e86c1; --ok: #1e8e5a; --err: #c0392b;
+    --border: #dbe2ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10151f; --card: #1a2230; --text: #e8edf5; --muted: #93a1b5;
+      --accent: #4da3e0; --accent2: #2e86c1; --ok: #3ecf8e; --err: #ff6b5e;
+      --border: #2c3850;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif; padding: 16px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px; width: 100%; max-width: 520px; box-shadow: 0 8px 30px rgba(0,0,0,.08);
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .drop {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 36px 16px;
+    text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .drop.hover { border-color: var(--accent); background: rgba(46,134,193,.07); }
+  .drop strong { color: var(--accent); }
+  .drop .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  input[type=file] { display: none; }
+  .progressWrap { margin-top: 24px; display: none; }
+  .label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+  .bar { height: 10px; background: var(--border); border-radius: 6px; overflow: hidden; }
+  .bar > div {
+    height: 100%; width: 0%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .3s;
+  }
+  .status { margin-top: 16px; font-size: 14px; color: var(--muted); min-height: 20px; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); white-space: pre-wrap; }
+  .btn {
+    display: none; margin-top: 16px; width: 100%; padding: 12px; border: 0; border-radius: 10px;
+    background: var(--accent2); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.08); }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Kitapçık Motoru</h1>
+  <p class="sub">Öğrenci PDF'lerini içeren .zip dosyasını yükleyin; kitapçıklar otomatik oluşturulup indirilecek.</p>
+
+  <div class="drop" id="drop">
+    <div><strong>Zip dosyası seçin</strong> veya buraya sürükleyin</div>
+    <div class="hint">İçinde öğrenci PDF'leri olan tek bir .zip</div>
+  </div>
+  <input type="file" id="fileInput" accept=".zip">
+
+  <div class="progressWrap" id="progressWrap">
+    <div class="label"><span id="phase">Yükleniyor</span><span id="percent">0%</span></div>
+    <div class="bar"><div id="barFill"></div></div>
+  </div>
+
+  <div class="status" id="status"></div>
+  <button class="btn" id="downloadBtn">Kitapçıkları indir</button>
+</div>
+
+<script>
+const drop = document.getElementById("drop");
+const fileInput = document.getElementById("fileInput");
+const progressWrap = document.getElementById("progressWrap");
+const phase = document.getElementById("phase");
+const percent = document.getElementById("percent");
+const barFill = document.getElementById("barFill");
+const statusEl = document.getElementById("status");
+const downloadBtn = document.getElementById("downloadBtn");
+
+const PHASE_LABELS = {
+  uploaded: "Sırada",
+  extracting: "Zip açılıyor",
+  scanning: "Öğrenci adları okunuyor",
+  processing: "Kitapçıklar oluşturuluyor",
+  zipping: "Sonuç paketleniyor",
+};
+
+let currentJobId = null;
+let pollTimer = null;
+
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("hover"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("hover"));
+drop.addEventListener("drop", e => {
+  e.preventDefault();
+  drop.classList.remove("hover");
+  if (e.dataTransfer.files.length) startUpload(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length) startUpload(fileInput.files[0]);
+});
+
+function setProgress(label, pct) {
+  progressWrap.style.display = "block";
+  phase.textContent = label;
+  percent.textContent = pct === null ? "" : Math.round(pct) + "%";
+  barFill.style.width = (pct === null ? 100 : pct) + "%";
+}
+
+function setStatus(text, cls) {
+  statusEl.textContent = text;
+  statusEl.className = "status" + (cls ? " " + cls : "");
+}
+
+function startUpload(file) {
+  if (!file.name.toLowerCase().endsWith(".zip")) {
+    setStatus("Lütfen .zip dosyası seçin.", "err");
+    return;
+  }
+  clearInterval(pollTimer);
+  downloadBtn.style.display = "none";
+  setStatus("");
+  setProgress("Yükleniyor", 0);
+
+  const form = new FormData();
+  form.append("file", file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", "/api/jobs");
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) setProgress("Yükleniyor", (e.loaded / e.total) * 100);
+  };
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      currentJobId = JSON.parse(xhr.responseText).jobId;
+      setProgress("Sırada", 0);
+      pollTimer = setInterval(poll, 1500);
+    } else {
+      let detail = "Yükleme başarısız (HTTP " + xhr.status + ")";
+      try { detail = JSON.parse(xhr.responseText).detail || detail; } catch (_) {}
+      setStatus(detail, "err");
+    }
+  };
+  xhr.onerror = () => setStatus("Bağlantı hatası — sunucuya ulaşılamadı.", "err");
+  xhr.send(form);
+}
+
+async function poll() {
+  try {
+    const res = await fetch("/api/jobs/" + currentJobId);
+    if (!res.ok) return;
+    const job = await res.json();
+
+    if (job.state === "processing" && job.total > 0) {
+      setProgress("Kitapçıklar oluşturuluyor (" + job.done + "/" + job.total + ")",
+                  (job.done / job.total) * 100);
+    } else if (job.state in PHASE_LABELS) {
+      setProgress(PHASE_LABELS[job.state], null);
+    }
+
+    if (job.state === "done") {
+      clearInterval(pollTimer);
+      setProgress("Tamamlandı", 100);
+      let msg = job.message;
+      if (job.errors > 0) msg += "\nHatalı dosyalar:\n" + job.failed.join("\n");
+      setStatus(msg, job.errors > 0 ? "err" : "ok");
+      downloadBtn.style.display = "block";
+      triggerDownload();
+    } else if (job.state === "error") {
+      clearInterval(pollTimer);
+      let msg = job.message;
+      if (job.failed && job.failed.length) msg += "\n" + job.failed.join("\n");
+      setStatus(msg, "err");
+    }
+  } catch (_) { /* geçici ağ hatası — sonraki denemede devam */ }
+}
+
+function triggerDownload() {
+  window.location.href = "/api/jobs/" + currentJobId + "/download";
+}
+downloadBtn.addEventListener("click", triggerDownload);
+</script>
+</body>
+</html>

@@ -54,3 +54,6 @@ htmlcov/
 .coverage.*
 .tox/
 .nox/
+
+# ── Web jobs (runtime data) ─────────────────────────────────
+jobs/

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "booklet-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "uvicorn", "src.web.app:app", "--host", "127.0.0.1", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

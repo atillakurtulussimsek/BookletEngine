@@ -1,0 +1,14 @@
+.git
+__pycache__
+**/__pycache__
+*.pyc
+tests
+logs
+jobs
+output_pdfs
+input_pdfs/*
+!input_pdfs/front_template.pdf
+!input_pdfs/back_cover.pdf
+run.sh
+run.bat
+README.md
